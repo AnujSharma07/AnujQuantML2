@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BTC 24-hour trade assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{ padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#f6f3ec; --card:#fffdf8; --ink:#1d1b16; --muted:#6b665b; --rule:#ddd6c6;
+  --gold:#b7791f; --gold-soft:#f3e3c3; --good:#2f7d4f; --bad:#b4442f; --wait:#9a9384;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --paper:#15140f; --card:#1e1c16; --ink:#efe9da; --muted:#a59e8c; --rule:#3a362b;
+  --gold:#e0a43a; --gold-soft:#3b2f17; --good:#5cb37f; --bad:#e07560; --wait:#8a8475; color-scheme:dark; }}
+:root[data-theme="dark"]{ --paper:#15140f; --card:#1e1c16; --ink:#efe9da; --muted:#a59e8c; --rule:#3a362b;
+  --gold:#e0a43a; --gold-soft:#3b2f17; --good:#5cb37f; --bad:#e07560; --wait:#8a8475; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 60px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:10px}
+header h1{font-family:var(--serif);font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13px}
+.banner{margin:14px 0 0;padding:10px 14px;border-left:3px solid var(--gold);background:var(--gold-soft);font-size:13.5px}
+.grid>*{min-width:0}
+.tbl{overflow-x:auto}
+.grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:22px;margin-top:20px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:20px}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.headline{font-family:var(--serif);font-size:27px;line-height:1.15;font-weight:600;margin:10px 0 8px;letter-spacing:-.015em}
+.pill{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--rule);color:var(--muted)}
+.pill.Low{color:var(--gold);border-color:var(--gold)} .pill.Medium{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.pill.High{background:var(--gold);color:var(--card);border-color:var(--gold)}
+.sec{margin-top:18px;padding-top:14px;border-top:1px dashed var(--rule)}
+.sec h3{margin:0 0 8px;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.verdict{display:flex;gap:12px;align-items:flex-start;margin-top:8px}
+.verdict i{flex:none;width:18px;height:18px;border-radius:50%;margin-top:12px;box-shadow:0 0 0 4px var(--gold-soft)}
+.icons{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:4px 0 8px}
+.icons span{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--card);font-weight:600;font-size:13px}
+.bottom{margin:8px 0 0;font-size:15px}
+.sub{margin:4px 0 2px;font-size:17px;font-weight:600}
+.mode{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:4px;background:var(--gold-soft);color:var(--ink)}
+.checks{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.checks div{border:1px solid var(--rule);border-radius:4px;padding:6px 4px;text-align:center;font-size:12px;color:var(--muted)}
+.checks b{display:block;font-size:16px;font-family:var(--mono)}
+.score{font-family:var(--mono);color:var(--ink);letter-spacing:0;text-transform:none;font-size:13px;margin-left:6px}
+ul.reasons .pts{font-family:var(--mono);width:28px;flex:none;text-align:right}
+details summary{cursor:pointer;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.odds{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:6px 0}
+.odds span{display:block;height:100%}
+.legend{display:flex;justify-content:space-between;font-size:13px;gap:8px;flex-wrap:wrap}
+.legend b{font-family:var(--mono);font-weight:500}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plan div{border:1px solid var(--rule);border-radius:4px;padding:8px}
+.plan small{display:block;color:var(--muted);font-size:11.5px}
+.plan b{font-family:var(--mono);font-weight:500;font-size:15px}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+ul.reasons{list-style:none;padding:0;margin:0}
+ul.reasons li{padding:5px 0;display:flex;gap:10px;align-items:baseline}
+ul.reasons .arr{font-family:var(--mono);width:16px;flex:none}
+.up{color:var(--good)} .down{color:var(--bad)}
+.dots{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 6px}
+.dots i{width:13px;height:13px;border-radius:50%;display:block}
+.edu{font-family:var(--serif);font-style:italic;font-size:14.5px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+button{font:inherit;font-size:13px;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--gold)}
+input[type=range]{flex:1;min-width:160px;accent-color:var(--gold)}
+#chart{width:100%;height:420px;position:relative}
+#chart svg{width:100%;height:100%;display:block}
+#chart .mk{cursor:pointer}
+#tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--rule);font-size:12px;padding:4px 7px;border-radius:3px;display:none;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding:6px 4px}
+td{padding:6px 4px;border-bottom:1px solid var(--rule)}
+td.n{text-align:right;font-family:var(--mono)}
+.outcome{font-size:13px;margin-top:6px}
+footer{margin-top:28px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--rule);padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>BTC/USDT &middot; assistant for a first-time trader</h1>
+  <span class="sub">Weekly trend check &middot; 24-hour trade check every 4 hours &middot; spot only &middot; not financial advice</span>
+</header>
+<div id="banner"></div>
+
+<div class="grid">
+  <section class="card" aria-live="polite">
+    <div class="stamp"><span id="time"></span><span id="price"></span></div>
+    <div class="verdict"><i id="light"></i><div><div class="headline" id="headline"></div><span class="pill" id="conf"></span></div></div>
+
+    <div class="sec" id="trendSec"><h3>This week: how much BTC to hold</h3>
+      <div class="checks" id="checks"></div>
+      <div class="note" id="trendNote"></div>
+    </div>
+
+    <div class="sec"><h3>Today's trade check (next 24 hours)</h3>
+      <div class="mode" id="mode"></div>
+      <p class="sub" id="shortHead"></p>
+      <div class="outcome" id="outcome"></div>
+      <div class="note" style="margin:8px 0 4px">Out of 10 trades like this one:</div>
+      <div class="icons" id="icons" role="img"></div>
+      <div class="legend" id="oddsLegend"></div>
+    </div>
+
+    <div class="sec"><h3>If you took this trade with a $1,000 account</h3>
+      <div class="plan">
+        <div><small>Buy</small><b id="buy"></b><small id="entry"></small></div>
+        <div><small>If it hits the stop</small><b id="stop"></b><small id="stopLoss"></small></div>
+        <div><small>If it hits the target</small><b id="target"></b><small id="tgtGain"></small></div>
+      </div>
+      <div class="note" id="sizing"></div>
+    </div>
+
+    <div class="sec"><h3>Why the model leans this way</h3>
+      <ul class="reasons" id="reasons"></ul>
+      <div class="note">These describe what the model is reacting to. They are not reasons the price will move.</div>
+    </div>
+
+    <details class="sec"><summary>Details for the curious</summary><div class="note" id="details"></div></details>
+    <div class="sec"><p class="edu" id="edu" style="margin:0"></p></div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="controls">
+        <button id="prevSig">&larr; Previous signal</button>
+        <input type="range" id="slider" aria-label="Replay a past moment">
+        <button id="nextSig">Next signal &rarr;</button>
+        <button id="latest">Now</button>
+      </div>
+      <div id="chart"><div id="tip"></div></div>
+      <div class="note">Every past short-term signal in the test year is marked. Green = target hit first, red = stop hit first, grey = timed out after 24h. Click a triangle, or drag the slider, to see exactly what the card said at that moment.</div>
+    </div>
+
+    <div class="card" style="margin-top:22px">
+      <h3 style="margin:0 0 8px;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Honest record of the short-term check &middot; test year</h3>
+      <div class="tbl"><table id="track"></table></div>
+      <div class="note" id="tracknote"></div>
+      <div class="tbl"><table id="perf" style="margin-top:14px"></table></div>
+    </div>
+  </section>
+</div>
+<footer>Built for the Roostoo intern assessment. Probabilities come from a walk-forward model trained only on data available at the time. Past results do not guarantee future results.</footer>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+const $ = id => document.getElementById(id);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (x, d=0) => x == null ? "\u2013" : Number(x).toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d});
+const pct = (x, d=0) => x == null ? "\u2013" : (100*x).toFixed(d) + "%";
+const cards = D.cards;
+const sigIdx = cards.map((c,i)=>c.trade ? i : -1).filter(i=>i>=0);
+let cur = cards.length - 1;
+
+function banner(){
+  const msgs = [];
+  if (D.synthetic) msgs.push(D.control
+    ? "Demo on a <b>synthetic test market with a small planted edge</b> (positive control), so you can see signals in action. Run <code>python run_all.py</code> to rebuild on real Binance data."
+    : "Demo on <b>synthetic placebo data</b> (a random walk with no edge). Run <code>python run_all.py</code> to rebuild on real Binance data.");
+  if (!D.validated) msgs.push("The model did <b>not</b> show a proven edge in walk-forward testing, so this tool never says \u201cbuy\u201d on its own authority. It still gives you the risk plan and context.");
+  $("banner").innerHTML = msgs.map(m => `<div class="banner">${m}</div>`).join("");
+}
+
+function render(i){
+  cur = i; const c = cards[i];
+  $("slider").value = i;
+  const g = css("--good"), b = css("--bad"), w = css("--wait"), au = css("--gold");
+  $("time").textContent = c.time + " UTC";
+  $("price").textContent = "BTC $" + fmt(c.price);
+  const tr = c.trend || {};
+  // --- this week (main answer) ---
+  if (!c.data_ok) {
+    $("headline").textContent = "Data unavailable \u2014 no signal";
+    $("conf").textContent = "Check again later"; $("conf").className = "pill None"; $("light").style.background = w;
+  } else if (tr.checks) {
+    const pctW = Math.round(tr.weight * 100);
+    $("headline").textContent = pctW === 0 ? "Stay in cash this week" : `Hold ${pctW}% of your BTC budget this week`;
+    $("conf").textContent = `${tr.n_up} of 5 trend checks up`; $("conf").className = "pill " + (tr.n_up >= 4 ? "High" : tr.n_up >= 2 ? "Medium" : "Low");
+    $("light").style.background = tr.n_up >= 4 ? g : tr.n_up >= 2 ? au : w;
+  }
+  if (tr.checks) {
+    const lab = {"7":"1 week","14":"2 weeks","28":"4 weeks","56":"8 weeks","112":"16 weeks"};
+    $("checks").innerHTML = Object.entries(tr.checks).map(([n, up]) => `<div><b class="${up ? "up" : "down"}">${up ? "\u25b2" : "\u25bc"}</b>${lab[n]}</div>`).join("");
+    $("trendNote").innerHTML = `Each box asks: is BTC higher than it was that long ago? Every \u201cyes\u201d means holding one fifth of the money you have set aside for BTC. Checked once a week, last on Sunday ${tr.decided_on}. In 2018\u20132026 this kept the worst fall to 47%, against 77% for simply holding.`;
+    $("trendSec").style.display = "";
+  } else { $("trendSec").style.display = "none"; }
+  // --- today's trade check (secondary) ---
+  $("mode").textContent = c.short_term_mode === "research" ? "Research only \u2014 this part has not passed its release test, so it never says \u201cbuy\u201d" : "Live";
+  $("shortHead").textContent = c.headline;
+  const oc = {target:"the target was hit first.", stop:"the stop was hit first.", expiry:"neither was hit, so it was sold after 24 hours.", pending:"still pending."}[c.outcome];
+  $("outcome").innerHTML = c.outcome !== "pending" ? `<span style="color:var(--muted)">What actually happened next:</span> ${oc}` : "";
+  const [nT, nE, nS] = c.of10;
+  $("icons").innerHTML = [].concat(Array(nT).fill([g,"\u2713"]), Array(nE).fill([w,"24h"]), Array(nS).fill([b,"\u2717"]))
+    .map(([col,t]) => `<span style="background:${col};font-size:${t === "24h" ? "10px" : "13px"}">${t}</span>`).join("");
+  $("icons").setAttribute("aria-label", `${nT} of 10 hit the target, ${nE} are sold after 24 hours, ${nS} hit the stop`);
+  $("oddsLegend").innerHTML = `<span><i class="dot" style="background:${g}"></i><b>${nT}</b> hit the target</span><span><i class="dot" style="background:${w}"></i><b>${nE}</b> sold after 24 hours (could be up or down)</span><span><i class="dot" style="background:${b}"></i><b>${nS}</b> hit the stop</span>`;
+  $("buy").textContent = "$" + fmt(c.size_for_1pct_risk_on_1000);
+  $("entry").textContent = "of BTC near $" + fmt(c.entry);
+  $("stop").textContent = "$" + fmt(c.stop);
+  $("stopLoss").textContent = `you lose about $${c.loss_if_stop.toFixed(2)} incl. fees`;
+  $("target").textContent = "$" + fmt(c.target);
+  $("tgtGain").textContent = `you gain about $${c.gain_if_target.toFixed(2)} after fees`;
+  $("sizing").innerHTML = `If neither price is reached, you sell after 24 hours and the result could be a small gain or loss. The rest of the $1,000 stays in cash. A sudden price gap can make a loss bigger than planned. This check expires at ${c.expires} UTC.`;
+  $("reasons").innerHTML = c.reasons.map(r => { const up = r.direction === "supports buying";
+    return `<li><span class="pts ${up ? "up" : "down"}">${up ? "\u25b2" : "\u25bc"}</span><span>${r.text}</span></li>`; }).join("");
+  $("details").innerHTML = `Model probabilities: target first ${pct(c.p_target,1)}, sold after 24h ${pct(c.p_timeout,1)}, stop first ${pct(c.p_stop,1)}. ` +
+    `Expected result ${c.expected_R >= 0 ? "+" : ""}${c.expected_R.toFixed(3)} times the amount risked, after fees. Stop ${c.stop_pct}% below entry, target ${c.target_pct}% above. ` +
+    `Typical 24h move right now: \u00b1${c.expected_range_pct ?? "\u2013"}% (volatility: ${c.regime}).`;
+  $("edu").textContent = c.education;
+  drawCursor(c.time);
+}
+
+// --- chart: daily candles drawn as SVG (no external libraries) -----------------
+let X = null, svgEl = null;
+function chart(){
+  const o = D.ohlc, days = new Map();
+  o.t.forEach((t,k) => { const d = t.slice(0,10);
+    if (!days.has(d)) days.set(d, {d, o:o.open[k], h:o.high[k], l:o.low[k], c:o.close[k]});
+    else { const x = days.get(d); x.h = Math.max(x.h, o.high[k]); x.l = Math.min(x.l, o.low[k]); x.c = o.close[k]; } });
+  const C = [...days.values()].filter(x => x.d >= D.test_start);
+  const W = Math.max(320, $("chart").clientWidth || 900), H = 420, L = 62, R = 10, T = 10, B = 28;
+  const lo = Math.min(...C.map(x=>x.l)) * 0.97, hi = Math.max(...C.map(x=>x.h)) * 1.01;
+  const t0 = Date.parse(C[0].d), t1 = Date.parse(C[C.length-1].d) + 864e5;
+  X = t => L + (Date.parse(t.replace(" ", "T") + (t.length <= 10 ? "" : "Z")) - t0) / (t1 - t0) * (W - L - R);
+  const Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const cw = Math.max(1, (W - L - R) / C.length * 0.7);
+  const g = css("--good"), b = css("--bad"), mut = css("--muted"), rule = css("--rule");
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="BTC price, test year, with past signals">`;
+  const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4)));
+  for (let v = Math.ceil(lo / step) * step; v < hi; v += step * Math.ceil((hi - lo) / step / 6)) {
+    s += `<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${rule}" stroke-width="0.6"/>` +
+         `<text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="${mut}">$${fmt(v)}</text>`; }
+  let lastM = "", lastX = -99;
+  C.forEach(x => { const m = x.d.slice(0,7); if (m !== lastM && X(x.d) - lastX > 34) { lastM = m; const xx = X(x.d); lastX = xx;
+    s += `<text x="${xx}" y="${H-8}" font-size="11" fill="${mut}">${new Date(x.d).toLocaleString("en-US",{month:"short"})}</text>`; } });
+  C.forEach(x => { const xx = X(x.d) + cw/2, col = x.c >= x.o ? g : b;
+    s += `<line x1="${xx}" x2="${xx}" y1="${Y(x.h)}" y2="${Y(x.l)}" stroke="${col}" stroke-width="0.8"/>` +
+         `<rect x="${xx-cw/2}" y="${Y(Math.max(x.o,x.c))}" width="${cw}" height="${Math.max(0.8, Math.abs(Y(x.o)-Y(x.c)))}" fill="${col}"/>`; });
+  s += `<line id="cursor" y1="${T}" y2="${H-B}" stroke="${css("--gold")}" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  const col = {target:g, stop:b, expiry:css("--wait"), pending:css("--gold")};
+  sigIdx.forEach(i => { const c = cards[i], xx = X(c.time), yy = Y(c.price * 0.97);
+    s += `<path class="mk" data-i="${i}" d="M${xx} ${yy-7} L${xx-5} ${yy+2} L${xx+5} ${yy+2} Z" fill="${col[c.outcome]}" stroke="${css("--card")}" stroke-width="0.8"/>`; });
+  $("chart").insertAdjacentHTML("afterbegin", s + "</svg>");
+  svgEl = $("chart").querySelector("svg");
+  svgEl.addEventListener("click", e => { const i = e.target.dataset && e.target.dataset.i; if (i != null) render(+i); });
+  svgEl.addEventListener("mousemove", e => { const i = e.target.dataset && e.target.dataset.i, tip = $("tip");
+    if (i == null) { tip.style.display = "none"; return; }
+    const c = cards[+i], r = $("chart").getBoundingClientRect();
+    tip.textContent = `${c.time} · ${c.confidence} · ${({target:"target hit", stop:"stopped out", expiry:"timed out", pending:"pending"})[c.outcome]}`;
+    tip.style.left = (e.clientX - r.left + 10) + "px"; tip.style.top = (e.clientY - r.top - 28) + "px"; tip.style.display = "block"; });
+}
+function drawCursor(t){ const l = svgEl && svgEl.querySelector("#cursor"); if (l) { const x = X(t); l.setAttribute("x1", x); l.setAttribute("x2", x); } }
+
+function tables(){
+  const t = D.track;
+  $("track").innerHTML = `<tr><th>Confidence</th><th style="text-align:right">4h periods</th><th style="text-align:right">Target first</th><th style="text-align:right">Stop first</th><th style="text-align:right">Per $10 risked</th></tr>` +
+    ["High","Medium","Low"].map(k => `<tr><td>${k}</td><td class="n">${t[k].n_bars}</td><td class="n">${pct(t[k].target_rate)}</td><td class="n">${pct(t[k].stop_rate)}</td><td class="n">${t[k].avg_net_R == null ? "\u2013" : (t[k].avg_net_R>=0?"+$":"\u2212$") + Math.abs(10*t[k].avg_net_R).toFixed(2)}</td></tr>`).join("");
+  $("tracknote").innerHTML = `Counted every 4 hours while a signal was on. No signal was shown ${pct(t.no_signal_share)} of the time, and staying out is part of the record.`;
+  const row = (n, x) => `<tr><td>${n}</td><td class="n">${x.n_trades ?? "\u2013"}</td><td class="n">${pct(x.total_return,1)}</td><td class="n">${pct(x.max_dd,1)}</td></tr>`;
+  $("perf").innerHTML = `<tr><th>Test year, after fees</th><th style="text-align:right">Trades</th><th style="text-align:right">Return</th><th style="text-align:right">Worst drop</th></tr>` +
+    row("Trend gauge, checked weekly", D.trend) + row("Buy and hold", D.bh) + row("Short-term signals (research)", D.model) + row("Taking every short-term trade", D.always);
+}
+
+banner(); chart(); tables();
+$("slider").min = 0; $("slider").max = cards.length - 1;
+$("slider").addEventListener("input", e => render(+e.target.value));
+$("prevSig").onclick = () => { const p = sigIdx.filter(i => i < cur).pop(); if (p != null) render(p); };
+$("nextSig").onclick = () => { const n = sigIdx.find(i => i > cur); if (n != null) render(n); };
+$("latest").onclick = () => render(cards.length - 1);
+render(cards.length - 1);
+</script>
+</body>
+</html>
