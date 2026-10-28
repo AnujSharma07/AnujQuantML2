@@ -1,0 +1,10 @@
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+reportlab>=4.0
+pypdf>=4.0
+pillow>=10.0
+jupyter            # optional, for notebook.ipynb
+playwright         # optional, only for tools_screens.py (card screenshots)
